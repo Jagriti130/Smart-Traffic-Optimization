@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://your-backend.onrender.com",
+  baseURL: "https://smart-trafiic-optimization.onrender.com",
 });
 
 export const getAreas = () => API.get("/areas");
