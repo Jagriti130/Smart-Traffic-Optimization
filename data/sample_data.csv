@@ -1,0 +1,13 @@
+area,hour,day_of_week,is_holiday,weather,temperature,vehicle_count,num_lanes,latitude,longitude,traffic_density,congestion_pct,waiting_time,category
+Andheri,8,1,0,Clear,28,160,4,19.1197,72.8468,0.78,78,35,High
+Andheri,9,1,0,Rain,26,195,4,19.1197,72.8468,0.89,89,44,Very High
+Bandra,17,2,0,Clear,30,170,3,19.0596,72.8295,0.82,82,38,High
+Bandra,18,2,0,Cloudy,29,155,4,19.0596,72.8295,0.75,75,33,High
+Dadar,12,3,0,Clear,32,95,2,19.0178,72.8478,0.38,38,14,Medium
+Dadar,14,4,0,Clear,31,75,3,19.0178,72.8478,0.29,29,10,Low
+Powai,8,5,1,Rain,25,210,4,19.1176,72.9060,0.93,93,49,Very High
+Powai,19,5,0,Clear,27,145,4,19.1176,72.9060,0.70,70,30,High
+Worli,10,6,1,Clear,29,120,3,19.0130,72.8150,0.58,58,24,Medium
+Worli,22,0,0,Clear,24,45,2,19.0130,72.8150,0.18,18,6,Low
+Juhu,7,1,0,Fog,22,140,4,19.1075,72.8263,0.68,68,28,High
+Juhu,16,2,0,Rain,27,175,4,19.1075,72.8263,0.84,84,40,Very High
