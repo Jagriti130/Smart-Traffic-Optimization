@@ -54,9 +54,6 @@ def signal_control(data: RLRequest):
     action_id, action_name = get_action(
         [data.queue_n, data.queue_s, data.queue_e, data.queue_w],
         data.waiting
-    )
-    return {
-        "action_id": action_id,
-        "action": action_name,
-        "recommended_green_seconds": 32
-    }
+    )   
+    return      
+
