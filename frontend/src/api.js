@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "https://smart-trafiic-optimization.onrender.com",
+  baseURL: process.env.REACT_APP_API_URL || "https://smart-trafiic-optimization.onrender.com",
+  timeout: 20000,
 });
 
 export const getAreas = () => API.get("/areas");

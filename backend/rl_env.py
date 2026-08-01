@@ -1,8 +1,17 @@
-import gymnasium as gym
-from gymnasium import spaces
-import numpy as np
-from stable_baselines3 import PPO
 import os
+from pathlib import Path
+
+import gymnasium as gym
+import numpy as np
+from gymnasium import spaces
+from stable_baselines3 import PPO
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+MODEL_DIR = BASE_DIR / "models"
+MODEL_PATH = MODEL_DIR / "ppo_traffic.zip"
+
+os.makedirs(MODEL_DIR, exist_ok=True)
+
 
 class SimpleTrafficEnv(gym.Env):
     def __init__(self):
@@ -39,17 +48,26 @@ class SimpleTrafficEnv(gym.Env):
         done = self.steps >= 40
         return self._get_obs(), reward, done, False, {}
 
+
 def train_rl():
-    os.makedirs("models", exist_ok=True)
     env = SimpleTrafficEnv()
     model = PPO("MlpPolicy", env, verbose=0, n_steps=512, learning_rate=0.0003)
     model.learn(total_timesteps=12000)
-    model.save("models/ppo_traffic")
+    model.save(MODEL_DIR / "ppo_traffic")
     print("✅ RL model trained successfully!")
 
+
 def get_action(queues, waiting):
-    model = PPO.load("models/ppo_traffic")
+    names = ["🟢 Green North-South", "🟢 Green East-West", "⏱️ Extend Green Time"]
+
+    if not MODEL_PATH.exists():
+        if waiting > 24:
+            return 0, names[0]
+        if sum(queues[2:]) > sum(queues[:2]):
+            return 1, names[1]
+        return 2, names[2]
+
+    model = PPO.load(MODEL_PATH)
     obs = np.array([*queues, waiting], dtype=np.float32)
     action, _ = model.predict(obs, deterministic=True)
-    names = ["🟢 Green North-South", "🟢 Green East-West", "⏱️ Extend Green Time"]
     return int(action), names[int(action)]

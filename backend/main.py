@@ -1,10 +1,19 @@
+from pathlib import Path
+
+import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
-from ml_model import predict
-from rl_env import get_action
-import pandas as pd
+
+try:
+    from .ml_model import predict
+    from .rl_env import get_action
+except ImportError:  # pragma: no cover - local execution fallback
+    from ml_model import predict
+    from rl_env import get_action
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH = BASE_DIR / "data" / "sample_data.csv"
 
 app = FastAPI(title="Smart Traffic Mini API", version="2.0")
 
@@ -16,7 +25,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ---------- Schemas ----------
+
 class PredictRequest(BaseModel):
     area: str
     hour: int = 9
@@ -27,6 +36,7 @@ class PredictRequest(BaseModel):
     vehicle_count: int = 130
     num_lanes: int = 4
 
+
 class RLRequest(BaseModel):
     queue_n: float
     queue_s: float
@@ -34,26 +44,34 @@ class RLRequest(BaseModel):
     queue_w: float
     waiting: float
 
-# ---------- Routes ----------
+
 @app.get("/")
 def home():
     return {"message": "Smart Traffic Mini API is running 🚦"}
 
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.get("/areas")
 def get_areas():
-    df = pd.read_csv("data/sample_data.csv")
+    df = pd.read_csv(DATA_PATH)
     areas = df[["area", "latitude", "longitude"]].drop_duplicates().to_dict(orient="records")
     return areas
+
 
 @app.post("/predict")
 def predict_traffic(data: PredictRequest):
     return predict(data.dict())
 
+
 @app.post("/signal")
 def signal_control(data: RLRequest):
     action_id, action_name = get_action(
         [data.queue_n, data.queue_s, data.queue_e, data.queue_w],
-        data.waiting
-    )   
-    return      
+        data.waiting,
+    )
+    return {"action_id": action_id, "action": action_name}
 
