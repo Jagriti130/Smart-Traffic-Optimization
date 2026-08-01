@@ -1,7 +1,9 @@
 import axios from "axios";
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || "/api";
+
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "https://smart-trafiic-optimization.onrender.com",
+  baseURL: API_BASE_URL,
   timeout: 20000,
 });
 

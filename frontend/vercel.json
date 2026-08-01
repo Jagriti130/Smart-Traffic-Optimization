@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://smart-trafiic-optimization.onrender.com/$1"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -16,6 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_PATH = BASE_DIR / "data" / "sample_data.csv"
 
 app = FastAPI(title="Smart Traffic Mini API", version="2.0")
+router = APIRouter(prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
@@ -50,28 +51,31 @@ def home():
     return {"message": "Smart Traffic Mini API is running 🚦"}
 
 
-@app.get("/health")
+@router.get("/health")
 def health():
     return {"status": "ok"}
 
 
-@app.get("/areas")
+@router.get("/areas")
 def get_areas():
     df = pd.read_csv(DATA_PATH)
     areas = df[["area", "latitude", "longitude"]].drop_duplicates().to_dict(orient="records")
     return areas
 
 
-@app.post("/predict")
+@router.post("/predict")
 def predict_traffic(data: PredictRequest):
     return predict(data.dict())
 
 
-@app.post("/signal")
+@router.post("/signal")
 def signal_control(data: RLRequest):
     action_id, action_name = get_action(
         [data.queue_n, data.queue_s, data.queue_e, data.queue_w],
         data.waiting,
     )
     return {"action_id": action_id, "action": action_name}
+
+
+app.include_router(router)
 

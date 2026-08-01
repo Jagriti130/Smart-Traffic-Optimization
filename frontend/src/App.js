@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import React, { useEffect, useState } from "react";
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
-import { getAreas, predictTraffic, getSignalAction } from "./api";
+import { getAreas, getSignalAction, predictTraffic } from "./api";
 import "./App.css";
 
-// Fix default marker icon issue
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -12,21 +11,13 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-function MapClickHandler({ onAreaClick }) {
-  useMapEvents({
-    click(e) {
-      // optional: handle empty click
-    },
-  });
-  return null;
-}
-
 function App() {
   const [areas, setAreas] = useState([]);
   const [selectedArea, setSelectedArea] = useState("Andheri");
   const [result, setResult] = useState(null);
   const [signal, setSignal] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState("Connected to the smart traffic engine.");
 
   const [form, setForm] = useState({
     hour: 9,
@@ -39,21 +30,32 @@ function App() {
   });
 
   useEffect(() => {
-    getAreas()
-      .then((res) => setAreas(res.data))
-      .catch((err) => console.error(err));
-  }, []);
+    const loadAreas = async () => {
+      try {
+        const res = await getAreas();
+        const areaList = res.data || [];
+        setAreas(areaList);
+        if (areaList.length > 0 && !areaList.some((item) => item.area === selectedArea)) {
+          setSelectedArea(areaList[0].area);
+        }
+        setStatus("Live area data loaded from the backend.");
+      } catch (err) {
+        setStatus("Backend unavailable. The dashboard is using fallback UI until the API is reachable.");
+      }
+    };
+
+    loadAreas();
+  }, [selectedArea]);
 
   const handlePredict = async () => {
     setLoading(true);
+    setStatus("Requesting a traffic prediction from the backend...");
     try {
-      const res = await predictTraffic({
-        area: selectedArea,
-        ...form,
-      });
+      const res = await predictTraffic({ area: selectedArea, ...form });
       setResult(res.data);
+      setStatus(`Prediction ready for ${res.data.area}.`);
     } catch (err) {
-      alert("Prediction failed. Is backend running?");
+      setStatus("Prediction failed. Make sure the backend is running and reachable.");
     }
     setLoading(false);
   };
@@ -68,8 +70,9 @@ function App() {
         waiting: 27,
       });
       setSignal(res.data);
+      setStatus("Signal recommendation received from the RL engine.");
     } catch (err) {
-      alert("RL service failed");
+      setStatus("Signal suggestion service is not reachable right now.");
     }
   };
 
@@ -77,55 +80,63 @@ function App() {
     <div className="app">
       <div className="header">
         <h1>🚦 Smart Traffic Optimization</h1>
-        <p>Click any area on the map or select from dropdown to predict traffic</p>
+        <p>Monitor city traffic conditions and receive AI-backed signal guidance in one place.</p>
+      </div>
+
+      <div className="hero-grid">
+        <div className="hero-card">
+          <h3>Live prediction</h3>
+          <p>Estimate congestion and waiting time for any area before peak hours.</p>
+        </div>
+        <div className="hero-card">
+          <h3>Adaptive control</h3>
+          <p>Use reinforcement learning suggestions to optimize signal timing decisions.</p>
+        </div>
+        <div className="hero-card">
+          <h3>Connected dashboard</h3>
+          <p>The React UI now talks to the backend API for real route and prediction data.</p>
+        </div>
       </div>
 
       <div className="container">
-        {/* Left - Map */}
         <div className="map-card">
-          <h2>Live Area Map (Mumbai)</h2>
-          <MapContainer
-            center={[19.08, 72.88]}
-            zoom={12}
-            style={{ height: "480px", width: "100%" }}
-          >
+          <div className="card-title-row">
+            <h2>Live Area Map</h2>
+            <span className="pill">Mumbai coverage</span>
+          </div>
+          <MapContainer center={[19.08, 72.88]} zoom={12} style={{ height: "480px", width: "100%" }}>
             <TileLayer
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               attribution='&copy; OpenStreetMap'
             />
-            {areas.map((a) => (
+            {areas.map((area) => (
               <Marker
-                key={a.area}
-                position={[a.latitude, a.longitude]}
-                eventHandlers={{
-                  click: () => {
-                    setSelectedArea(a.area);
-                  },
-                }}
+                key={area.area}
+                position={[area.latitude, area.longitude]}
+                eventHandlers={{ click: () => setSelectedArea(area.area) }}
               >
                 <Popup>
-                  <b>{a.area}</b>
+                  <b>{area.area}</b>
                   <br />
-                  Click marker to select
+                  Click to inspect this location.
                 </Popup>
               </Marker>
             ))}
           </MapContainer>
         </div>
 
-        {/* Right - Controls */}
         <div className="control-card">
-          <h2>Traffic Prediction</h2>
+          <div className="card-title-row">
+            <h2>Traffic Intelligence</h2>
+            <span className="pill pill-success">{status}</span>
+          </div>
 
           <div className="form-group">
             <label>Selected Area</label>
-            <select
-              value={selectedArea}
-              onChange={(e) => setSelectedArea(e.target.value)}
-            >
-              {areas.map((a) => (
-                <option key={a.area} value={a.area}>
-                  {a.area}
+            <select value={selectedArea} onChange={(e) => setSelectedArea(e.target.value)}>
+              {areas.map((area) => (
+                <option key={area.area} value={area.area}>
+                  {area.area}
                 </option>
               ))}
             </select>
@@ -133,19 +144,12 @@ function App() {
 
           <div className="form-group">
             <label>Hour (0-23)</label>
-            <input
-              type="number"
-              value={form.hour}
-              onChange={(e) => setForm({ ...form, hour: +e.target.value })}
-            />
+            <input type="number" value={form.hour} onChange={(e) => setForm({ ...form, hour: +e.target.value })} />
           </div>
 
           <div className="form-group">
             <label>Weather</label>
-            <select
-              value={form.weather}
-              onChange={(e) => setForm({ ...form, weather: e.target.value })}
-            >
+            <select value={form.weather} onChange={(e) => setForm({ ...form, weather: e.target.value })}>
               <option>Clear</option>
               <option>Cloudy</option>
               <option>Rain</option>
@@ -155,11 +159,7 @@ function App() {
 
           <div className="form-group">
             <label>Vehicle Count</label>
-            <input
-              type="number"
-              value={form.vehicle_count}
-              onChange={(e) => setForm({ ...form, vehicle_count: +e.target.value })}
-            />
+            <input type="number" value={form.vehicle_count} onChange={(e) => setForm({ ...form, vehicle_count: +e.target.value })} />
           </div>
 
           <button className="btn btn-predict" onClick={handlePredict} disabled={loading}>
@@ -187,19 +187,17 @@ function App() {
               </div>
               <div className="result-row">
                 <span>Category</span>
-                <span className={`badge badge-${result.category}`}>
-                  {result.category}
-                </span>
+                <span className={`badge badge-${result.category}`}>{result.category}</span>
               </div>
             </div>
           )}
 
           {signal && (
-            <div className="result-box" style={{ marginTop: 15 }}>
+            <div className="result-box">
               <h3>RL Signal Control</h3>
               <div className="result-row">
                 <span>Suggested Action</span>
-                <span style={{ color: "#34d399" }}>{signal.action}</span>
+                <span className="signal-value">{signal.action}</span>
               </div>
             </div>
           )}
