@@ -6,6 +6,6 @@
     "node": "18.x"
   },
   "scripts": {
-    "build": "cd frontend && npm run build"
+    "build": "npm install --prefix frontend && npm run build --prefix frontend"
   }
 }
